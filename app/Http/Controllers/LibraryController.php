@@ -3,16 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Models\UserGame;
+use App\Models\GameStat;
+use App\Jobs\UpdateGameStatistics;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use OpenApi\Attributes as OA;
+use Illuminate\Support\Facades\Log;
 
 class LibraryController extends Controller
 {
     // =============================================
     // API ENDPOINTS (dla Swaggera)
     // =============================================
-    
+
     #[OA\Get(
         path: "/api/library",
         summary: "Pobierz listę gier z biblioteki (API)",
@@ -53,7 +56,7 @@ class LibraryController extends Controller
 
         if ($req->filled('min_rating')) {
             $q->whereNotNull('rating')
-              ->where('rating', '>=', (int)$req->input('min_rating'));
+                ->where('rating', '>=', (int)$req->input('min_rating'));
         }
 
         $sort = $req->input('sort', 'updated');
@@ -107,6 +110,11 @@ class LibraryController extends Controller
             'rating' => $data['rating'] ?? null,
         ]);
 
+        // Jeśli dodano z oceną, wysyłamy job
+        if (!is_null($data['rating'])) {
+            dispatch(new UpdateGameStatistics($data['rawg_game_id']))->onQueue('statistics');
+        }
+
         return response()->json(['game' => $game], 201);
     }
 
@@ -141,7 +149,7 @@ class LibraryController extends Controller
     public function apiUpdate(Request $req, $id)
     {
         $game = UserGame::findOrFail($id);
-        
+
         if ($game->user_id !== Auth::id()) {
             return response()->json(['message' => 'To nie twoja gra'], 403);
         }
@@ -151,7 +159,13 @@ class LibraryController extends Controller
             'rating' => ['nullable', 'integer', 'min:1', 'max:10'],
         ]);
 
+        $oldRating = $game->rating;
         $game->update($data);
+
+        if ($oldRating != $game->rating) {
+            dispatch(new UpdateGameStatistics($game->rawg_game_id))->onQueue('statistics');
+        }
+
         return response()->json(['game' => $game]);
     }
 
@@ -177,19 +191,28 @@ class LibraryController extends Controller
     public function apiDestroy($id)
     {
         $game = UserGame::findOrFail($id);
-        
+
         if ($game->user_id !== Auth::id()) {
             return response()->json(['message' => 'To nie twoja gra'], 403);
         }
 
+        $rawgGameId = $game->rawg_game_id;
+        $hadRating = !is_null($game->rating);
+
         $game->delete();
+
+        if ($hadRating) {
+            Log::info("Destroy: usuwam grę {$rawgGameId}, hadRating=" . ($hadRating ? 'tak' : 'nie'));
+            dispatch(new UpdateGameStatistics($rawgGameId))->onQueue('statistics');
+        }
+
         return response()->json(null, 204);
     }
 
     // =============================================
     // WEB ENDPOINTS (dla przeglądarki)
     // =============================================
-    
+
     public function index(Request $req)
     {
         $q = UserGame::query()->where('user_id', Auth::id());
@@ -200,7 +223,7 @@ class LibraryController extends Controller
 
         if ($req->filled('min_rating')) {
             $q->whereNotNull('rating')
-              ->where('rating', '>=', (int)$req->input('min_rating'));
+                ->where('rating', '>=', (int)$req->input('min_rating'));
         }
 
         $sort = $req->input('sort', 'updated');
@@ -231,7 +254,15 @@ class LibraryController extends Controller
             'rating' => ['nullable', 'integer', 'min:1', 'max:10'],
         ]);
 
-        UserGame::updateOrCreate(
+        // Znajdź istniejący wpis, aby porównać starą ocenę
+        $existing = UserGame::where('user_id', Auth::id())
+            ->where('rawg_game_id', (int)$data['rawg_game_id'])
+            ->first();
+
+        $oldRating = $existing ? $existing->rating : null;
+
+        // Aktualizacja lub utworzenie
+        $game = UserGame::updateOrCreate(
             [
                 'user_id' => Auth::id(),
                 'rawg_game_id' => (int)$data['rawg_game_id'],
@@ -243,6 +274,11 @@ class LibraryController extends Controller
                 'rating' => $data['rating'] ?? null,
             ]
         );
+
+        // Jeśli ocena się zmieniła (nawet na null), wysyłamy job
+        if ($oldRating != $game->rating) {
+            dispatch(new UpdateGameStatistics($game->rawg_game_id))->onQueue('statistics');
+        }
 
         return redirect()->route('library.index')->with('success', 'Dodano / zaktualizowano w bibliotece.');
     }
@@ -256,10 +292,16 @@ class LibraryController extends Controller
             'rating' => ['nullable', 'integer', 'min:1', 'max:10'],
         ]);
 
+        $oldRating = $userGame->rating;
+
         $userGame->update([
             'status' => $data['status'],
             'rating' => $data['rating'] ?? null,
         ]);
+
+        if ($oldRating != $userGame->rating) {
+            dispatch(new UpdateGameStatistics($userGame->rawg_game_id))->onQueue('statistics');
+        }
 
         return redirect()->back()->with('success', 'Zmieniono wpis.');
     }
@@ -268,7 +310,17 @@ class LibraryController extends Controller
     {
         abort_unless($userGame->user_id === Auth::id(), 403);
 
+        $rawgGameId = $userGame->rawg_game_id;
+        $hadRating = !is_null($userGame->rating);
+
         $userGame->delete();
+
+        // Dopiero po usunięciu przelicz statystyki
+        if ($hadRating) {
+            Log::info("Destroy: usuwam grę {$rawgGameId}, hadRating=" . ($hadRating ? 'tak' : 'nie'));
+            dispatch(new UpdateGameStatistics($rawgGameId))->onQueue('statistics');
+        }
+
         return redirect()->back()->with('success', 'Usunięto z biblioteki.');
     }
 }

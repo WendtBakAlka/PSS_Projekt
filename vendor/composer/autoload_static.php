@@ -687,6 +687,8 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
         'App\\Http\\Middleware\\VerifyAdmin' => __DIR__ . '/../..' . '/app/Http/Middleware/VerifyAdmin.php',
         'App\\Http\\Requests\\Auth\\LoginRequest' => __DIR__ . '/../..' . '/app/Http/Requests/Auth/LoginRequest.php',
         'App\\Http\\Requests\\ProfileUpdateRequest' => __DIR__ . '/../..' . '/app/Http/Requests/ProfileUpdateRequest.php',
+        'App\\Jobs\\UpdateGameStatistics' => __DIR__ . '/../..' . '/app/Jobs/UpdateGameStatistics.php',
+        'App\\Models\\GameStat' => __DIR__ . '/../..' . '/app/Models/GameStat.php',
         'App\\Models\\User' => __DIR__ . '/../..' . '/app/Models/User.php',
         'App\\Models\\UserGame' => __DIR__ . '/../..' . '/app/Models/UserGame.php',
         'App\\Providers\\AppServiceProvider' => __DIR__ . '/../..' . '/app/Providers/AppServiceProvider.php',

@@ -27,6 +27,8 @@ return array(
     'App\\Http\\Middleware\\VerifyAdmin' => $baseDir . '/app/Http/Middleware/VerifyAdmin.php',
     'App\\Http\\Requests\\Auth\\LoginRequest' => $baseDir . '/app/Http/Requests/Auth/LoginRequest.php',
     'App\\Http\\Requests\\ProfileUpdateRequest' => $baseDir . '/app/Http/Requests/ProfileUpdateRequest.php',
+    'App\\Jobs\\UpdateGameStatistics' => $baseDir . '/app/Jobs/UpdateGameStatistics.php',
+    'App\\Models\\GameStat' => $baseDir . '/app/Models/GameStat.php',
     'App\\Models\\User' => $baseDir . '/app/Models/User.php',
     'App\\Models\\UserGame' => $baseDir . '/app/Models/UserGame.php',
     'App\\Providers\\AppServiceProvider' => $baseDir . '/app/Providers/AppServiceProvider.php',
