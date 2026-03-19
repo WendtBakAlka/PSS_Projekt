@@ -191,7 +191,6 @@ class LibraryController extends Controller
     public function apiDestroy($id)
     {
         $game = UserGame::findOrFail($id);
-
         if ($game->user_id !== Auth::id()) {
             return response()->json(['message' => 'To nie twoja gra'], 403);
         }
@@ -201,8 +200,9 @@ class LibraryController extends Controller
 
         $game->delete();
 
-        if ($hadRating) {
-            Log::info("Destroy: usuwam grę {$rawgGameId}, hadRating=" . ($hadRating ? 'tak' : 'nie'));
+        $anyLeft = UserGame::where('rawg_game_id', $rawgGameId)->exists();
+
+        if ($hadRating || !$anyLeft) {
             dispatch(new UpdateGameStatistics($rawgGameId))->onQueue('statistics');
         }
 
@@ -315,9 +315,9 @@ class LibraryController extends Controller
 
         $userGame->delete();
 
-        // Dopiero po usunięciu przelicz statystyki
-        if ($hadRating) {
-            Log::info("Destroy: usuwam grę {$rawgGameId}, hadRating=" . ($hadRating ? 'tak' : 'nie'));
+        $anyLeft = UserGame::where('rawg_game_id', $rawgGameId)->exists();
+
+        if ($hadRating || !$anyLeft) {
             dispatch(new UpdateGameStatistics($rawgGameId))->onQueue('statistics');
         }
 

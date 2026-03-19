@@ -26,6 +26,14 @@ class UpdateGameStatistics implements ShouldQueue
     {
         Log::info("=== UpdateGameStatistics START dla gry: {$this->rawgGameId} ===");
 
+        $anyUserGame = UserGame::where('rawg_game_id', $this->rawgGameId)->exists();
+
+        if (!$anyUserGame) {
+            GameStat::where('rawg_game_id', $this->rawgGameId)->delete();
+            Log::info("Brak wpisów w user_games, usunięto GameStat dla gry: {$this->rawgGameId}");
+            return;
+        }
+
         $ratings = UserGame::where('rawg_game_id', $this->rawgGameId)
             ->whereNotNull('rating')
             ->pluck('rating');
@@ -33,18 +41,15 @@ class UpdateGameStatistics implements ShouldQueue
         $count = $ratings->count();
         Log::info("Liczba ocen w user_games: " . $count);
 
-        // Pobierz przykładowy wpis, żeby mieć tytuł i okładkę (jeśli istnieje)
         $sample = UserGame::where('rawg_game_id', $this->rawgGameId)->first();
 
-        // Oblicz średnią (zaokrągloną do 2 miejsc po przecinku)
-        $avg = round($ratings->avg(), 2);
+        $avg = $count > 0 ? round($ratings->avg(), 2) : null;
 
-        // Aktualizuj lub utwórz rekord w game_stats
         GameStat::updateOrCreate(
             ['rawg_game_id' => $this->rawgGameId],
             [
-                'title'          => $sample->title ?? null,
-                'cover_url'      => $sample->cover_url ?? null,
+                'title'          => $sample->title,
+                'cover_url'      => $sample->cover_url,
                 'average_rating' => $avg,
                 'ratings_count'  => $count,
             ]
