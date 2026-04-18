@@ -39,6 +39,7 @@
     <div class="container">
         {{-- Logo kieruje do strony games --}}
         <a href="{{ route('games') }}" class="logo">GAME<span class="text-light">LIST</span></a>
+        <a href="{{ route('rankings.topRated') }}" class="text-warning text-decoration-none ms-5">Rankingi <i class="bi bi-trophy"></i></a>
 
         {{-- Dropdown z profilem i wylogowaniem --}}
         <div class="ms-auto dropdown">
@@ -78,7 +79,7 @@
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-md-8">
-            
+
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2 class="mb-0">Ustawienia profilu</h2>
                 <a href="{{ route('games') }}" class="btn btn-outline-light btn-sm">← Powrót do gier</a>

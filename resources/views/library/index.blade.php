@@ -53,6 +53,7 @@
     <nav class="navbar navbar-expand-lg navbar-custom">
         <div class="container">
             <a href="{{ route('games') }}" class="logo">GAME<span class="text-light">LIST</span></a>
+            <a href="{{ route('rankings.topRated') }}" class="text-warning text-decoration-none ms-5">Rankingi <i class="bi bi-trophy"></i></a>
             <div class="ms-auto dropdown">
                 <a class="nav-link nav-link-user dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                     {{ auth()->user()->name ?? auth()->user()->email }}
@@ -171,7 +172,7 @@
                             {{-- ZMIANA STATUSU/OCENY --}}
                             <form method="POST" action="{{ route('library.update', $it->id) }}" class="row g-2 mt-auto">
                                 @csrf
-                                @method('PATCH')
+                                @method('PUT')
 
                                 <div class="col-7">
                                     <select name="status" class="form-select form-select-sm search-input" required>

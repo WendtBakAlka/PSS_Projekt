@@ -11,6 +11,7 @@ class GameStat extends Model
         'title',
         'cover_url',
         'average_rating',
-        'ratings_count'
+        'ratings_count',
+        'rawg_rating'
     ];
 }

@@ -32,20 +32,20 @@ Route::middleware(['auth'])->group(function () {
     })->name('games');
 
     Route::get('/games/{id}', [GameController::class, 'show'])->name('games.show');
-    
+
     // BIBLIOTEKA
     Route::get('/library', [LibraryController::class, 'index'])->name('library.index');
     Route::post('/library', [LibraryController::class, 'store'])->name('library.store');
     Route::put('/library/{userGame}', [LibraryController::class, 'update'])->name('library.update'); // ZMIENIONE NA PUT
     Route::delete('/library/{userGame}', [LibraryController::class, 'destroy'])->name('library.destroy');
-    
+
     // PROFIL
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     // DODANE: Trasa do zmiany hasła dla web
     Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password.update');
-    
+
     // ADMIN PANEL (WEB)
     Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [AdminController::class, 'index'])->name('index');
@@ -53,11 +53,15 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/users/{id}/toggle', [AdminController::class, 'toggleAdmin'])->name('toggle-admin');
         Route::delete('/users/{id}', [AdminController::class, 'deleteUser'])->name('destroy');
     });
-    
+
     Route::get('/dashboard', function () {
         return redirect('/games');
     })->name('dashboard');
-    
+
+    // RANKINGI
+    Route::get('/rankings/top-rated', [App\Http\Controllers\RankingController::class, 'topRated'])->name('rankings.topRated');
+    Route::get('/rankings/most-popular', [App\Http\Controllers\RankingController::class, 'mostPopular'])->name('rankings.mostPopular');
+
     // WYLOGOWANIE
     Route::post('/logout', [AuthController::class, 'webLogout'])->name('logout');
 });

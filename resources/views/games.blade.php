@@ -55,6 +55,7 @@
     <nav class="navbar navbar-expand-lg navbar-custom">
         <div class="container">
             <a href="{{ route('games') }}" class="logo">GAME<span class="text-light">LIST</span></a>
+            <a href="{{ route('rankings.topRated') }}" class="text-warning text-decoration-none ms-5">Rankingi <i class="bi bi-trophy"></i></a>
             <div class="ms-auto dropdown">
                 <a class="nav-link nav-link-user dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                     {{ auth()->user()->name ?? auth()->user()->email }}
@@ -203,7 +204,7 @@
                             <p class="card-text text-secondary mb-4">
                                 <small>Data wydania: ${year}</small>
                             </p>
-                            <a href="${detailsUrl}" class="btn btn-outline-light btn-sm mt-auto stretched-link">Szczegóły</a>
+                            <a href="${detailsUrl}" class="btn btn-outline-light btn-sm mt-auto stretched-link"><i class="bi bi-info-circle"></i> Szczegóły</a>
                         </div>
                     </div>
                 </div>

@@ -41,6 +41,7 @@
     <nav class="navbar navbar-expand-lg navbar-custom">
         <div class="container">
             <a href="{{ route('games') }}" class="logo">GAME<span class="text-light">LIST</span></a>
+            <a href="{{ route('rankings.topRated') }}" class="text-warning text-decoration-none ms-5">Rankingi <i class="bi bi-trophy"></i></a>
             <div class="ms-auto dropdown">
                 <a class="nav-link nav-link-user dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                     {{ auth()->user()->name ?? auth()->user()->email }}
@@ -79,6 +80,7 @@
         $desc  = $game['description_raw'] ?? '';
         $released = $game['released'] ?? null;
         $metacritic = $game['metacritic'] ?? null;
+        $rawgRating = isset($game['rating']) ? round($game['rating'] * 2, 1) : null;
     @endphp
 
     <div class="container mt-5">
@@ -90,6 +92,7 @@
                     RAWG ID: {{ $game['id'] }}
                     @if($released) • Premiera: {{ $released }} @endif
                     @if($metacritic) • Metacritic: {{ $metacritic }} @endif
+                    @if($rawgRating) • Ocena RAWG: {{ $rawgRating }}/10 @endif
                 </div>
             </div>
 
@@ -162,7 +165,7 @@
         {{-- SEKCJA: DODAJ DO BIBLIOTEKI --}}
         <div class="card card-custom mb-5">
             <div class="card-body">
-                <h3 class="mb-4">Twoja biblioteka</h3>
+                <h4 class="text-danger mb-3">Biblioteka</h4>
 
                 {{-- GŁÓWNY FORMULARZ --}}
                 @if($inLibrary)
