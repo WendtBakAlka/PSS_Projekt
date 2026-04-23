@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\URL;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -17,8 +18,14 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      */
-    public function boot(): void
+    public function boot()
     {
-        //
+        if (request()->getHost() !== 'localhost') {
+            URL::forceScheme('https');
+        }
+
+        if (str_contains(request()->getHost(), 'trycloudflare.com')) {
+            config(['session.domain' => request()->getHost()]);
+        }
     }
 }
