@@ -52,6 +52,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/users', [AdminController::class, 'listUsers'])->name('users');
         Route::post('/users/{id}/toggle', [AdminController::class, 'toggleAdmin'])->name('toggle-admin');
         Route::delete('/users/{id}', [AdminController::class, 'deleteUser'])->name('destroy');
+        Route::get('/games', [AdminController::class, 'listGames'])->name('games');
     });
 
     Route::get('/dashboard', function () {

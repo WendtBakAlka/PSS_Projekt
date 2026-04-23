@@ -11,10 +11,10 @@
         .logo { font-size: 1.5rem; font-weight: bold; color: #dc3545; text-decoration: none; }
         .logo:hover { color: #ff5c5c; }
         .nav-link-user { color: #f5f5f5 !important; }
-        .dropdown-menu-dark { background-color: #111; border: 1px solid #1f1f1f; }
+        .dropdown-menu-dark { background-color: #111; border: 1px solid #1f1f1f; box-shadow: 0 5px 15px rgba(220, 53, 69, 0.1); }
+        .dropdown-item:hover { color: #fff; background: rgba(220, 53, 69, 0.1); border-left: 4px solid #dc3545; transition: 0.3s; }
         .btn-red { background-color: #dc3545; border: none; color: white; }
         .btn-red:hover { background-color: #b52a37; color: white; }
-        /* USUNIĘTO nadpisywanie .btn-outline-light – zostawiamy domyślny Bootstrap */
         .nav-tabs .nav-link.active { background-color: #dc3545; color: white; border-color: #dc3545; }
         .nav-tabs .nav-link { color: #ccc; background-color: #111; border-color: #333; }
 
@@ -45,7 +45,6 @@
         .table-gamelist a:not(.btn):hover {
             color: #dc3545;
         }
-        /* NIE nadpisujemy .btn-outline-light wewnątrz tabeli */
 
         .pagination .page-link {
             background-color: #111;
@@ -74,13 +73,28 @@
                     {{ auth()->user()->name ?? auth()->user()->email }}
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark">
-                    <li><a class="dropdown-item" href="{{ route('profile.edit') }}">Twój Profil</a></li>
-                    <li><a class="dropdown-item" href="{{ route('library.index') }}">Biblioteka</a></li>
+                    <li>
+                        <a class="dropdown-item" href="{{ route('profile.edit') }}">
+                            <i class="bi bi-person"></i> Twój Profil
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="dropdown-item" href="{{ route('library.index') }}">
+                            <i class="bi bi-collection me-2"></i> Biblioteka
+                        </a>
+                    </li>
                     @if(auth()->user()->is_admin)
-                        <li><a class="dropdown-item" href="{{ route('admin.index') }}">Panel admina</a></li>
+                        <a class="dropdown-item" href="{{ route('admin.index') }}">
+                            <i class="bi bi-person"></i> Panel admina
+                        </a>
                     @endif
-                    <li><hr class="dropdown-divider"></li>
-                    <li><form action="{{ route('logout') }}" method="POST">@csrf<button type="submit" class="dropdown-item text-danger">Wyloguj się</button></form></li>
+                    <li><hr class="dropdown-divider border-secondary"></li>
+                    <li>
+                        <form action="{{ route('logout') }}" method="POST">
+                            @csrf
+                            <button type="submit" class="dropdown-item text-danger">Wyloguj się</button>
+                        </form>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -99,20 +113,32 @@
                     <th>Ocena RAWG</th><th>Akcje</th></tr>
                 </thead>
                 <tbody>
-                @forelse($games as $index => $game)
+                @forelse($games as $index => $stat)
+                    @php
+                        $game = $stat->game; // relacja Game
+                        $title = $game->title ?? 'Brak tytułu';
+                        $cover = $game->cover_url ?? 'https://via.placeholder.com/50x50?text=No+Img';
+                        $rawgRating = $game->rawg_rating ?? null;
+                    @endphp
                     <tr>
                         <td>{{ $games->firstItem() + $index }}</td>
-                        <td class="fw-bold">{{ $game->title ?? 'Brak tytułu' }}</td>
-                        <td>@if($game->cover_url)<img src="{{ $game->cover_url }}" width="50" height="50" style="object-fit: cover; border-radius: 8px;">@else<span class="text-muted">brak</span>@endif</td>
+                        <td class="fw-bold">{{ $title }}</td>
+                        <td>
+                            <img src="{{ $cover }}" width="50" height="50" style="object-fit: cover; border-radius: 8px;">
+                        </td>
                         @if($activeTab == 'rated')
-                            <td>{{ number_format($game->average_rating, 1) }}/10</td>
-                            <td>{{ $game->ratings_count }}</td>
+                            <td>{{ number_format($stat->average_rating, 1) }}/10</td>
+                            <td>{{ $stat->ratings_count }}</td>
                         @else
-                            <td>{{ $game->ratings_count }}</td>
-                            <td>{{ number_format($game->average_rating, 1) }}/10</td>
+                            <td>{{ $stat->ratings_count }}</td>
+                            <td>{{ number_format($stat->average_rating, 1) }}/10</td>
                         @endif
-                        <td>{{ $game->rawg_rating ? $game->rawg_rating.'/10' : 'brak' }}</td>
-                        <td><a href="{{ route('games.show', $game->rawg_game_id) }}" class="btn btn-sm btn-outline-light"><i class="bi bi-info-circle"></i> Szczegóły</a></td>
+                        <td>{{ $rawgRating ? $rawgRating.'/10' : 'brak' }}</td>
+                        <td>
+                            <a href="{{ route('games.show', $game->rawg_game_id) }}" class="btn btn-sm btn-outline-light">
+                                <i class="bi bi-info-circle"></i> Szczegóły
+                            </a>
+                        </td>
                     </tr>
                 @empty
                     <tr><td colspan="7" class="text-center">Brak gier.</td></tr>

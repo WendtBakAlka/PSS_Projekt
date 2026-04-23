@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\Game;
 use App\Models\UserGame;
 use App\Models\GameStat;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -16,70 +17,67 @@ class UpdateGameStatistics implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected $rawgGameId;
+    protected $gameId; // zmieniamy nazwę i typ
 
-    public function __construct($rawgGameId)
+    public function __construct($gameId)
     {
-        $this->rawgGameId = $rawgGameId;
+        $this->gameId = $gameId;
     }
 
     public function handle()
     {
-        Log::info("=== UpdateGameStatistics START dla gry: {$this->rawgGameId} ===");
+        Log::info("=== UpdateGameStatistics START dla game_id: {$this->gameId} ===");
 
-        $ratings = UserGame::where('rawg_game_id', $this->rawgGameId)
+        // Pobierz wszystkie oceny dla tej gry przez game_id
+        $ratings = UserGame::where('game_id', $this->gameId)
             ->whereNotNull('rating')
             ->pluck('rating');
 
         $count = $ratings->count();
         Log::info("Liczba ocen w user_games: " . $count);
 
-        $sample = UserGame::where('rawg_game_id', $this->rawgGameId)->first();
-
-        if ($count === 0) {
-            // Brak ocen – zerujemy statystyki, ale zachowujemy istniejące dane (jeśli są)
-            $stat = GameStat::where('rawg_game_id', $this->rawgGameId)->first();
-            if ($stat) {
-                $stat->update([
-                    'average_rating' => null,
-                    'ratings_count'  => 0,
-                    // rawg_rating pozostaje bez zmian
-                ]);
-            } else {
-                GameStat::create([
-                    'rawg_game_id'    => $this->rawgGameId,
-                    'title'           => null,
-                    'cover_url'       => null,
-                    'average_rating'  => null,
-                    'ratings_count'   => 0,
-                    'rawg_rating'     => null,
-                ]);
-            }
-            Log::info("Zaktualizowano statystyki (brak ocen) dla gry: {$this->rawgGameId}");
+        // Pobierz grę z tabeli games
+        $game = Game::find($this->gameId);
+        if (!$game) {
+            Log::error("Gra o ID {$this->gameId} nie istnieje w tabeli games");
             return;
         }
 
-        $avg = round($ratings->avg(), 2);
+        // Sprawdź, czy istnieje już rekord w game_stats
+        $stat = GameStat::where('game_id', $this->gameId)->first();
 
-        // Pobierz ocenę z RAWG API (jeśli jeszcze nie mamy lub odświeżamy)
-        $rawgRating = null;
-        if ($sample && $sample->rawg_game_id) {
-            $rawgRating = $this->fetchRawgRating($sample->rawg_game_id);
+        if ($count === 0) {
+            // Brak ocen – usuń rekord statystyk (jeśli istnieje)
+            if ($stat) {
+                $stat->delete();
+                Log::info("Usunięto statystyki (brak ocen) dla game_id: {$this->gameId}");
+            } else {
+                Log::info("Brak ocen i brak rekordu w game_stats dla game_id: {$this->gameId}");
+            }
+            return;
         }
 
-        // Aktualizuj lub utwórz rekord
+        // Są oceny – oblicz średnią
+        $avg = round($ratings->avg(), 2);
+
+        // Pobierz ocenę z RAWG przez rawg_game_id (z modelu Game)
+        $rawgRating = $this->fetchRawgRating($game->rawg_game_id);
+        if ($rawgRating !== null && $game->rawg_rating != $rawgRating) {
+            $game->rawg_rating = $rawgRating;
+            $game->save();
+            Log::info("Zaktualizowano rawg_rating dla gry {$game->title} na {$rawgRating}");
+        }
+
+        // Aktualizuj lub utwórz rekord w game_stats
         GameStat::updateOrCreate(
-            ['rawg_game_id' => $this->rawgGameId],
+            ['game_id' => $this->gameId],
             [
-                'title'          => $sample->title ?? null,
-                'cover_url'      => $sample->cover_url ?? null,
                 'average_rating' => $avg,
                 'ratings_count'  => $count,
-                'rawg_rating'    => $rawgRating,
             ]
         );
 
-        Log::info("Zaktualizowano statystyki dla gry RAWG ID: {$this->rawgGameId}");
+        Log::info("Zaktualizowano statystyki dla game_id: {$this->gameId}");
     }
 
     private function fetchRawgRating($rawgGameId)
@@ -88,10 +86,9 @@ class UpdateGameStatistics implements ShouldQueue
             $apiKey = env('RAWG_API_KEY');
             $baseUrl = env('RAWG_BASE_URL', 'https://api.rawg.io/api');
 
-            // Dla pewności zaloguj, czy klucz istnieje
-            Log::info("Próba pobrania RAWG, klucz: " . ($apiKey ? 'ustawiony' : 'BRAK'));
+            Log::info("Próba pobrania RAWG dla rawg_game_id: {$rawgGameId}, klucz: " . ($apiKey ? 'ustawiony' : 'BRAK'));
 
-            $response = \Illuminate\Support\Facades\Http::get("{$baseUrl}/games/{$rawgGameId}", [
+            $response = Http::get("{$baseUrl}/games/{$rawgGameId}", [
                 'key' => $apiKey,
             ]);
 
@@ -103,7 +100,7 @@ class UpdateGameStatistics implements ShouldQueue
                     Log::info("Pobrano rating RAWG: $rating -> $converted");
                     return $converted;
                 } else {
-                    Log::warning("Brak pola 'rating' w odpowiedzi RAWG dla gry $rawgGameId");
+                    Log::warning("Brak pola 'rating' w odpowiedzi RAWG dla gry {$rawgGameId}");
                 }
             } else {
                 Log::warning("Błąd HTTP przy pobieraniu RAWG: " . $response->status());

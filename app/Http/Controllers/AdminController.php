@@ -12,7 +12,7 @@ class AdminController extends Controller
     // =============================================
     // WEB ENDPOINTS (oryginalne - bez zmian)
     // =============================================
-    
+
     /**
      * Główny pulpit admina (admin.blade.php)
      */
@@ -68,6 +68,22 @@ class AdminController extends Controller
     }
 
     /**
+     * Wyświetla listę wszystkich gier (tabela games) – tylko dla admina
+     */
+    public function listGames(Request $request)
+    {
+        $games = \App\Models\Game::orderBy('id', 'desc')->get(); // lub orderBy('title')
+
+        // Jeśli zapytanie chce JSON (API)
+        if ($request->expectsJson()) {
+            return response()->json(['games' => $games]);
+        }
+
+        // Dla przeglądarki – zwróć widok
+        return view('admin.admin-games', compact('games'));
+    }
+
+    /**
      * Przełączanie roli admina (Toggle) - DODANO ZABEZPIECZENIE
      */
     public function toggleAdmin($id)
@@ -78,18 +94,18 @@ class AdminController extends Controller
         if ($id == Auth::id()) {
             // SPRAWDZAMY CZY TO OSTATNI ADMIN
             $adminCount = User::where('is_admin', true)->count();
-            
+
             if ($adminCount <= 1 && $user->is_admin) {
                 return back()->with('error', 'Nie możesz odebrać sobie uprawnień admina, ponieważ jesteś ostatnim administratorem w systemie!');
             }
-            
+
             return back()->with('error', 'Nie możesz zmienić uprawnień samemu sobie.');
         }
 
         // SPRAWDZAMY CZY UŻYTKOWNIK DO ZMIANY JEST OSTATNIM ADMINEM
         if ($user->is_admin) {
             $adminCount = User::where('is_admin', true)->count();
-            
+
             if ($adminCount <= 1) {
                 return back()->with('error', 'Nie można odebrać uprawnień ostatniemu administratorowi w systemie!');
             }
@@ -138,21 +154,21 @@ class AdminController extends Controller
         // Nie możesz usunąć własnego konta
         if ($id == Auth::id()) {
             $msg = 'Nie możesz usunąć własnego konta.';
-            return $request->expectsJson() 
-                ? response()->json(['message' => $msg], 403) 
+            return $request->expectsJson()
+                ? response()->json(['message' => $msg], 403)
                 : back()->with('error', $msg);
         }
 
         $user = User::findOrFail($id);
-        
+
         // SPRAWDZAMY CZY UŻYTKOWNIK DO USUNIĘCIA JEST OSTATNIM ADMINEM
         if ($user->is_admin) {
             $adminCount = User::where('is_admin', true)->count();
-            
+
             if ($adminCount <= 1) {
                 $msg = 'Nie można usunąć ostatniego administratora w systemie!';
-                return $request->expectsJson() 
-                    ? response()->json(['message' => $msg], 403) 
+                return $request->expectsJson()
+                    ? response()->json(['message' => $msg], 403)
                     : back()->with('error', $msg);
             }
         }
@@ -254,7 +270,7 @@ class AdminController extends Controller
     public function apiUpdateUser(Request $request, $id)
     {
         $user = User::findOrFail($id);
-        
+
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
             'email' => 'sometimes|required|email|unique:users,email,' . $id,
@@ -305,13 +321,13 @@ class AdminController extends Controller
         // Nie możesz zmienić uprawnień samemu sobie
         if ($id == Auth::id()) {
             $adminCount = User::where('is_admin', true)->count();
-            
+
             if ($adminCount <= 1 && $user->is_admin) {
                 return response()->json([
                     'message' => 'Nie możesz odebrać sobie uprawnień admina, ponieważ jesteś ostatnim administratorem w systemie!'
                 ], 403);
             }
-            
+
             return response()->json([
                 'message' => 'Nie możesz zmienić uprawnień samemu sobie.'
             ], 403);
@@ -320,7 +336,7 @@ class AdminController extends Controller
         // SPRAWDZAMY CZY UŻYTKOWNIK DO ZMIANY JEST OSTATNIM ADMINEM
         if ($user->is_admin) {
             $adminCount = User::where('is_admin', true)->count();
-            
+
             if ($adminCount <= 1) {
                 return response()->json([
                     'message' => 'Nie można odebrać uprawnień ostatniemu administratorowi w systemie!'
@@ -332,7 +348,7 @@ class AdminController extends Controller
         $user->save();
 
         $action = $user->is_admin ? 'nadano' : 'odebrano';
-        
+
         return response()->json([
             'message' => "Uprawnienia administratora zostały {$action} użytkownikowi {$user->name}.",
             'user' => $user

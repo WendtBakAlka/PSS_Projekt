@@ -103,7 +103,6 @@
 
             {{-- Sekcja 3: Usuwanie konta --}}
             <div class="profile-card p-4 border-danger shadow-sm">
-                <h3 class="text-danger">Strefa Niebezpieczna</h3>
                 <div class="max-w-xl">
                     {{-- PROSTY FORMULARZ BEZ MODALA --}}
                     <form method="POST" action="{{ route('profile.destroy') }}" id="deleteAccountForm">

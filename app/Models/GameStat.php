@@ -7,11 +7,13 @@ class GameStat extends Model
 {
     protected $table = 'game_stats';
     protected $fillable = [
-        'rawg_game_id',
-        'title',
-        'cover_url',
+        'game_id',
         'average_rating',
         'ratings_count',
-        'rawg_rating'
     ];
+
+    public function game()
+    {
+        return $this->belongsTo(Game::class);
+    }
 }
