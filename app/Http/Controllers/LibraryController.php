@@ -127,6 +127,8 @@ class LibraryController extends Controller
             ]
         );
 
+        dispatch(new \App\Jobs\EnrichGameMetadataJob($game->id))->onQueue('metadata');
+
         // Dodaj grę do biblioteki użytkownika
         $userGame = UserGame::create([
             'user_id' => Auth::id(),

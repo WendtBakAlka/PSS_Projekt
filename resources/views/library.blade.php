@@ -127,64 +127,77 @@
         {{-- LISTA --}}
         <div class="row g-4">
             @forelse($items as $it)
-                @php
-                    $game = $it->game;
-                    $cover = $game->cover_url ?? 'https://via.placeholder.com/400x200?text=No+Image';
-                    $title = $game->title ?? 'Brak tytułu';
-                    $rawgRating = $game->rawg_rating ?? null;
-                @endphp
-                <div class="col-md-6 col-lg-4">
-                    <div class="card card-custom h-100">
-                        <div style="position: relative;">
-                            <img src="{{ $cover }}" class="card-img-top game-img" alt="{{ $title }}">
-                            @if($rawgRating)
-                                <span class="badge rounded-pill badge-rating">⭐ {{ $rawgRating }}/10</span>
-                            @elseif($it->rating)
-                                <span class="badge rounded-pill badge-rating" style="border-color: #666; color: #666;">⭐ {{ $it->rating }}/10</span>
-                            @endif
-                        </div>
-                        <div class="card-body d-flex flex-column">
-                            <h5 class="card-title text-danger text-truncate">{{ $title }}</h5>
-                            <div class="muted small mb-3">
-                                Status: <span class="text-light">{{ $statuses[$it->status] ?? $it->status }}</span>
-                            </div>
-                            <a href="{{ route('games.show', $game->rawg_game_id) }}" class="btn btn-outline-light btn-sm mb-3">
-                                <i class="bi bi-info-circle"></i> Szczegóły
-                            </a>
+    @php
+        $game = $it->game;
+        $cover = $game?->cover_url ?? 'https://via.placeholder.com/400x200?text=No+Image';
+        $title = $game?->title ?? 'Brak tytułu';
+        $rawgRating = $game?->rawg_rating ?? null;
+    @endphp
 
-                            {{-- ZMIANA STATUSU/OCENY --}}
-                            <form method="POST" action="{{ route('library.update', $it->id) }}" class="row g-2 mt-auto">
-                                @csrf
-                                @method('PUT')
-                                <div class="col-7">
-                                    <select name="status" class="form-select form-select-sm search-input" required>
-                                        @foreach($statuses as $k => $label)
-                                            <option value="{{ $k }}" @selected($it->status === $k)>{{ $label }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-5">
-                                    <input type="number" min="1" max="10" name="rating"
-                                           class="form-control form-control-sm search-input"
-                                           value="{{ $it->rating ?? '' }}" placeholder="ocena">
-                                </div>
-                                <div class="col-12 d-flex gap-2">
-                                    <button class="btn btn-red btn-sm w-100" type="submit">
-                                        <i class="bi bi-save"></i> Zapisz
-                                    </button>
-                                </div>
-                            </form>
+    <div class="col-md-6 col-lg-4">
+        <div class="card card-custom h-100">
+            <div style="position: relative;">
+                <img src="{{ $cover }}" class="card-img-top game-img" alt="{{ $title }}">
 
-                            <form method="POST" action="{{ route('library.destroy', $it->id) }}" class="mt-2">
-                                @csrf
-                                @method('DELETE')
-                                <button class="btn btn-outline-danger btn-sm w-100" type="submit">
-                                    <i class="bi bi-trash"></i> Usuń
-                                </button>
-                            </form>
-                        </div>
-                    </div>
+                @if($rawgRating)
+                    <span class="badge rounded-pill badge-rating">⭐ {{ $rawgRating }}/10</span>
+                @elseif($it->rating)
+                    <span class="badge rounded-pill badge-rating" style="border-color: #666; color: #666;">⭐ {{ $it->rating }}/10</span>
+                @endif
+            </div>
+
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title text-danger text-truncate">{{ $title }}</h5>
+
+                <div class="muted small mb-3">
+                    Status: <span class="text-light">{{ $statuses[$it->status] ?? $it->status }}</span>
                 </div>
+
+                @if($game)
+                    <a href="{{ route('games.show', $game->rawg_game_id) }}" class="btn btn-outline-light btn-sm mb-3">
+                        <i class="bi bi-info-circle"></i> Szczegóły
+                    </a>
+                @else
+                    <span class="btn btn-outline-secondary btn-sm mb-3 disabled">
+                        Brak danych gry
+                    </span>
+                @endif
+
+                <form method="POST" action="{{ route('library.update', $it->id) }}" class="row g-2 mt-auto">
+                    @csrf
+                    @method('PUT')
+
+                    <div class="col-7">
+                        <select name="status" class="form-select form-select-sm search-input" required>
+                            @foreach($statuses as $k => $label)
+                                <option value="{{ $k }}" @selected($it->status === $k)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="col-5">
+                        <input type="number" min="1" max="10" name="rating"
+                               class="form-control form-control-sm search-input"
+                               value="{{ $it->rating ?? '' }}" placeholder="ocena">
+                    </div>
+
+                    <div class="col-12 d-flex gap-2">
+                        <button class="btn btn-red btn-sm w-100" type="submit">
+                            <i class="bi bi-save"></i> Zapisz
+                        </button>
+                    </div>
+                </form>
+
+                <form method="POST" action="{{ route('library.destroy', $it->id) }}" class="mt-2">
+                    @csrf
+                    @method('DELETE')
+                    <button class="btn btn-outline-danger btn-sm w-100" type="submit">
+                        <i class="bi bi-trash"></i> Usuń
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
             @empty
                 <div class="col-12 text-center text-muted">
                     <h3>Biblioteka pusta :(</h3>

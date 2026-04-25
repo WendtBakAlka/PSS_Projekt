@@ -137,6 +137,7 @@
 <script>
     let currentPage = 1;
     let currentQuery = '';
+    let shownGames = new Set();
 
     document.getElementById('searchInput').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
@@ -145,72 +146,106 @@
     });
 
     async function searchGames(page) {
-        const query = document.getElementById('searchInput').value;
+        const query = document.getElementById('searchInput').value.trim();
         const container = document.getElementById('games-container');
         const loading = document.getElementById('loading');
         const pagination = document.getElementById('pagination-container');
 
         if (!query) return;
 
-        if(page === 1) {
+        if (page === 1) {
             currentPage = 1;
             currentQuery = query;
+            shownGames.clear();
+            container.innerHTML = '';
         }
 
         loading.classList.remove('d-none');
-        container.innerHTML = '';
         pagination.classList.add('d-none');
 
+        await loadLocalGames(page);
+        await loadRawgGames(page);
+
+        loading.classList.add('d-none');
+    }
+
+    async function loadLocalGames(page) {
         try {
-            const response = await fetch(`/api/games/search?search=${encodeURIComponent(currentQuery)}&page=${page}`);
+            const response = await fetch(`/api/games/search?search=${encodeURIComponent(currentQuery)}&page=${page}&source=local`);
             const data = await response.json();
 
-            loading.classList.add('d-none');
-
             if (data.results && data.results.length > 0) {
-                renderGames(data.results);
-                updatePagination(data.next, data.previous, page);
-            } else {
-                container.innerHTML = '<div class="col-12 text-center text-muted"><h3>Nie znaleziono gier :(</h3></div>';
+                for (const game of data.results) {
+                    renderGame(game);
+                    await wait(80);
+                }
             }
-
         } catch (error) {
-            console.error(error);
-            loading.classList.add('d-none');
-            container.innerHTML = '<div class="alert alert-danger">Wystąpił błąd podczas pobierania danych.</div>';
+            console.error('Local search error:', error);
         }
     }
 
-    // POPRAWIONA FUNKCJA RENDERUJĄCA
-    function renderGames(games) {
+    async function loadRawgGames(page) {
         const container = document.getElementById('games-container');
 
-        games.forEach(game => {
-            // Przeliczanie oceny z 5 na 10
-            const rating10 = (game.rating * 2).toFixed(1);
+        try {
+            const response = await fetch(`/api/games/search?search=${encodeURIComponent(currentQuery)}&page=${page}&source=rawg`);
+            const data = await response.json();
 
-            const image = game.background_image ? game.background_image : 'https://via.placeholder.com/400x200?text=No+Image';
-            const year = game.released ? game.released.substring(0, 4) : 'TBA';
-            const detailsUrl = `/games/${game.id}`;
-            const html = `
-                <div class="col-md-6 col-lg-4">
-                    <div class="card card-custom h-100">
-                        <div style="position: relative;">
-                            <img src="${image}" class="card-img-top game-img" alt="${game.name}">
-                            <span class="badge rounded-pill badge-rating">⭐ ${rating10}</span>
-                        </div>
-                        <div class="card-body d-flex flex-column">
-                            <h5 class="card-title text-danger text-truncate">${game.name}</h5>
-                            <p class="card-text text-secondary mb-4">
-                                <small>Data wydania: ${year}</small>
-                            </p>
-                            <a href="${detailsUrl}" class="btn btn-outline-light btn-sm mt-auto stretched-link"><i class="bi bi-info-circle"></i> Szczegóły</a>
-                        </div>
+            if (data.results && data.results.length > 0) {
+                for (const game of data.results) {
+                    renderGame(game);
+                    await wait(120);
+                }
+
+                updatePagination(data.next, data.previous, page);
+            } else if (container.innerHTML.trim() === '') {
+                container.innerHTML = '<div class="col-12 text-center text-muted"><h3>Nie znaleziono gier :(</h3></div>';
+            }
+        } catch (error) {
+            console.error('RAWG search error:', error);
+
+            if (container.innerHTML.trim() === '') {
+                container.innerHTML = '<div class="alert alert-danger">Wystąpił błąd podczas pobierania danych.</div>';
+            }
+        }
+    }
+
+    function renderGame(game) {
+        const container = document.getElementById('games-container');
+
+        if (!game.id || shownGames.has(game.id)) {
+            return;
+        }
+
+        shownGames.add(game.id);
+
+        const rating = game.rating ? (game.rating * 2).toFixed(1) : 'brak';
+        const image = game.background_image ? game.background_image : 'https://via.placeholder.com/400x200?text=No+Image';
+        const year = game.released ? game.released.substring(0, 4) : 'TBA';
+        const detailsUrl = `/games/${game.id}`;
+
+        const html = `
+            <div class="col-md-6 col-lg-4">
+                <div class="card card-custom h-100">
+                    <div style="position: relative;">
+                        <img src="${image}" class="card-img-top game-img" alt="${escapeHtml(game.name)}">
+                        <span class="badge rounded-pill badge-rating">⭐ ${rating}</span>
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title text-danger text-truncate">${escapeHtml(game.name)}</h5>
+                        <p class="card-text text-secondary mb-4">
+                            <small>Data wydania: ${year}</small>
+                        </p>
+                        <a href="${detailsUrl}" class="btn btn-outline-light btn-sm mt-auto stretched-link">
+                            <i class="bi bi-info-circle"></i> Szczegóły
+                        </a>
                     </div>
                 </div>
-            `;
-            container.innerHTML += html;
-        });
+            </div>
+        `;
+
+        container.insertAdjacentHTML('beforeend', html);
     }
 
     function updatePagination(nextUrl, prevUrl, page) {
@@ -224,18 +259,29 @@
 
         prevBtn.disabled = !prevUrl;
         nextBtn.disabled = !nextUrl;
-
-        if(!prevUrl) {
-            prevBtn.classList.replace('btn-outline-danger', 'btn-outline-secondary');
-        } else {
-            prevBtn.classList.replace('btn-outline-secondary', 'btn-outline-danger');
-        }
     }
 
     function changePage(direction) {
         currentPage += direction;
-        if(currentPage < 1) currentPage = 1;
+        if (currentPage < 1) currentPage = 1;
+
+        shownGames.clear();
+        document.getElementById('games-container').innerHTML = '';
+
         searchGames(currentPage);
+    }
+
+    function wait(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function escapeHtml(text) {
+        return String(text ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
     }
 </script>
 

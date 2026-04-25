@@ -3,76 +3,85 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\EnrichGameMetadataJob;
+use App\Models\Game;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
-use OpenApi\Attributes as OA;
 
 class GameApiController extends Controller
 {
-    #[OA\Get(
-        path: "/api/games/search",
-        summary: "Wyszukaj gry w RAWG API",
-        tags: ["Games"],
-        parameters: [
-            new OA\Parameter(
-                name: "search",
-                description: "Fraza do wyszukania gier",
-                in: "query",
-                required: true,
-                schema: new OA\Schema(type: "string")
-            ),
-            new OA\Parameter(
-                name: "page",
-                description: "Numer strony wyników",
-                in: "query",
-                required: false,
-                schema: new OA\Schema(type: "integer", default: 1)
-            ),
-        ],
-        responses: [
-            new OA\Response(
-                response: 200,
-                description: "Lista znalezionych gier z RAWG API",
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: "count", type: "integer", example: 100),
-                        new OA\Property(property: "next", type: "string", nullable: true, example: "https://api.rawg.io/api/games?search=witcher&page=2"),
-                        new OA\Property(property: "previous", type: "string", nullable: true),
-                        new OA\Property(
-                            property: "results",
-                            type: "array",
-                            items: new OA\Items(
-                                properties: [
-                                    new OA\Property(property: "id", type: "integer", example: 3328),
-                                    new OA\Property(property: "name", type: "string", example: "The Witcher 3: Wild Hunt"),
-                                    new OA\Property(property: "released", type: "string", example: "2015-05-18"),
-                                    new OA\Property(property: "background_image", type: "string", example: "https://media.rawg.io/media/games/618/618c2031a07bbff6b4f611f10b6bcdbc.jpg"),
-                                ]
-                            )
-                        )
-                    ]
-                )
-            ),
-            new OA\Response(response: 500, description: "Błąd połączenia z RAWG API"),
-        ]
-    )]
     public function search(Request $request)
     {
         $query = $request->input('search');
-        $page = $request->input('page', 1);
+        $page = (int) $request->input('page', 1);
+        $source = $request->input('source', 'rawg');
 
-        // Używamy config() zamiast env(), bo tak masz w api.php
-        $response = Http::get(config('rawg.base_url') . '/games', [
+        if (!$query) {
+            return response()->json([
+                'results' => [],
+                'next' => null,
+                'previous' => null,
+            ]);
+        }
+
+        if ($source === 'local') {
+            $games = Game::where('title', 'like', '%' . $query . '%')
+                ->orderBy('title')
+                ->paginate(9, ['*'], 'page', $page);
+
+            return response()->json([
+                'results' => $games->getCollection()->map(function ($game) {
+                    return [
+                        'id' => $game->rawg_game_id,
+                        'name' => $game->title,
+                        'released' => null,
+                        'background_image' => $game->cover_url,
+                        'rating' => $game->rawg_rating ? $game->rawg_rating / 2 : 0,
+                        'from_local' => true,
+                    ];
+                })->values(),
+                'next' => $games->hasMorePages(),
+                'previous' => $games->currentPage() > 1,
+            ]);
+        }
+
+        $response = Http::timeout(10)->get(config('rawg.base_url') . '/games', [
             'key' => config('rawg.key'),
             'search' => $query,
             'page_size' => 9,
             'page' => $page,
         ]);
 
-        if ($response->successful()) {
-            return response()->json($response->json());
+        if (!$response->successful()) {
+            return response()->json(['error' => 'Błąd API RAWG'], 500);
         }
 
-        return response()->json(['error' => 'Błąd API RAWG'], 500);
+        $data = $response->json();
+
+        foreach (($data['results'] ?? []) as $item) {
+            if (empty($item['id']) || empty($item['name'])) {
+                continue;
+            }
+
+            $game = Game::updateOrCreate(
+                ['rawg_game_id' => $item['id']],
+                [
+                    'title' => $item['name'],
+                    'cover_url' => $item['background_image'] ?? null,
+                    'rawg_rating' => isset($item['rating']) ? round($item['rating'] * 2, 1) : null,
+                ]
+            );
+
+            if (empty($game->description) || empty($game->genres) || empty($game->platforms)) {
+                EnrichGameMetadataJob::dispatch($game->id)->onQueue('metadata');
+            }
+        }
+
+        $data['results'] = collect($data['results'] ?? [])->map(function ($game) {
+            $game['from_local'] = false;
+            return $game;
+        })->values();
+
+        return response()->json($data);
     }
 }
