@@ -21,7 +21,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot()
     {
         if (request()->getHost() !== 'localhost') {
-            URL::forceScheme('https');
+            //URL::forceScheme('https');
         }
 
         if (str_contains(request()->getHost(), 'trycloudflare.com')) {

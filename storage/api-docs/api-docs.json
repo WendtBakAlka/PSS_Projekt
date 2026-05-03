@@ -311,90 +311,6 @@
                 ]
             }
         },
-        "/api/games/search": {
-            "get": {
-                "tags": [
-                    "Games"
-                ],
-                "summary": "Wyszukaj gry w RAWG API",
-                "operationId": "52739f2cc50701d8ef45e51d62b23fac",
-                "parameters": [
-                    {
-                        "name": "search",
-                        "in": "query",
-                        "description": "Fraza do wyszukania gier",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "description": "Numer strony wyników",
-                        "required": false,
-                        "schema": {
-                            "type": "integer",
-                            "default": 1
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Lista znalezionych gier z RAWG API",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "count": {
-                                            "type": "integer",
-                                            "example": 100
-                                        },
-                                        "next": {
-                                            "type": "string",
-                                            "example": "https://api.rawg.io/api/games?search=witcher&page=2",
-                                            "nullable": true
-                                        },
-                                        "previous": {
-                                            "type": "string",
-                                            "nullable": true
-                                        },
-                                        "results": {
-                                            "type": "array",
-                                            "items": {
-                                                "properties": {
-                                                    "id": {
-                                                        "type": "integer",
-                                                        "example": 3328
-                                                    },
-                                                    "name": {
-                                                        "type": "string",
-                                                        "example": "The Witcher 3: Wild Hunt"
-                                                    },
-                                                    "released": {
-                                                        "type": "string",
-                                                        "example": "2015-05-18"
-                                                    },
-                                                    "background_image": {
-                                                        "type": "string",
-                                                        "example": "https://media.rawg.io/media/games/618/618c2031a07bbff6b4f611f10b6bcdbc.jpg"
-                                                    }
-                                                },
-                                                "type": "object"
-                                            }
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Błąd połączenia z RAWG API"
-                    }
-                }
-            }
-        },
         "/api/auth/login": {
             "post": {
                 "tags": [
@@ -487,8 +403,8 @@
                                     "password": {
                                         "type": "string",
                                         "format": "password",
-                                        "minLength": 8,
-                                        "example": "tajnehaslo123"
+                                        "example": "tajnehaslo123",
+                                        "minLength": 8
                                     },
                                     "password_confirmation": {
                                         "type": "string",
@@ -582,21 +498,25 @@
                                                     "id": {
                                                         "type": "integer"
                                                     },
-                                                    "rawg_game_id": {
+                                                    "game_id": {
                                                         "type": "integer"
                                                     },
                                                     "title": {
                                                         "type": "string"
+                                                    },
+                                                    "cover_url": {
+                                                        "type": "string",
+                                                        "nullable": true
+                                                    },
+                                                    "rawg_rating": {
+                                                        "type": "number",
+                                                        "nullable": true
                                                     },
                                                     "status": {
                                                         "type": "string"
                                                     },
                                                     "rating": {
                                                         "type": "integer",
-                                                        "nullable": true
-                                                    },
-                                                    "cover_url": {
-                                                        "type": "string",
                                                         "nullable": true
                                                     }
                                                 },
@@ -648,19 +568,19 @@
                                     },
                                     "status": {
                                         "type": "string",
+                                        "example": "playing",
                                         "enum": [
                                             "to_play",
                                             "playing",
                                             "finished"
-                                        ],
-                                        "example": "playing"
+                                        ]
                                     },
                                     "rating": {
                                         "type": "integer",
-                                        "maximum": 10,
-                                        "minimum": 1,
                                         "example": 9,
-                                        "nullable": true
+                                        "nullable": true,
+                                        "maximum": 10,
+                                        "minimum": 1
                                     }
                                 },
                                 "type": "object"
@@ -716,9 +636,9 @@
                                     },
                                     "rating": {
                                         "type": "integer",
+                                        "nullable": true,
                                         "maximum": 10,
-                                        "minimum": 1,
-                                        "nullable": true
+                                        "minimum": 1
                                     }
                                 },
                                 "type": "object"
@@ -957,8 +877,8 @@
                                     "new_password": {
                                         "type": "string",
                                         "format": "password",
-                                        "minLength": 8,
-                                        "example": "new_password456"
+                                        "example": "new_password456",
+                                        "minLength": 8
                                     }
                                 },
                                 "type": "object"
@@ -1027,10 +947,6 @@
         {
             "name": "Admin",
             "description": "Admin"
-        },
-        {
-            "name": "Games",
-            "description": "Games"
         },
         {
             "name": "Authentication",

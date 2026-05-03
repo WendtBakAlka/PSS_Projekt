@@ -1,9 +1,52 @@
 Changelog
 =========
 
-## [Unreleased]
+## 2.3.0
 
-- ...
+### Changed
+
+- Clarified documentation and testing of `uniqueValues`.
+
+### Added
+
+- All assertions now support `string|callable` for the message.
+
+## 2.2.0
+
+### Added
+
+- Added `isNotInstanceOfAny` assertion.
+
+## 2.1.6
+
+### Fixed
+
+- Corrected docblocks for `list*` methods.
+
+## 2.1.5
+
+### Fixed
+
+- Fixed regression of `instanceOf` messages
+
+## 2.1.4
+
+### Fixed
+
+- Use custom message for more internal calls.
+
+## 2.1.3
+
+### Fixed
+
+- Corrected `isList` type documentation.
+- Corrected `isAOf`, `isInstanceOf`, etc type documentation.
+
+## 2.1.2
+
+### Fixed
+
+- Changed `all*` assertion values back to `mixed`.
 
 ## 2.1.1
 

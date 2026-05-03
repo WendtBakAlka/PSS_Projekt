@@ -41,6 +41,8 @@ class MediaType extends AbstractAnnotation
      *
      * Furthermore, if referencing a schema which contains an example,
      * the example value shall override the example provided by the schema.
+     *
+     * @var mixed
      */
     public $example = Generator::UNDEFINED;
 
@@ -63,7 +65,7 @@ class MediaType extends AbstractAnnotation
      * The encoding object shall only apply to requestBody objects when the media type is multipart or
      * application/x-www-form-urlencoded.
      *
-     * @var Encoding[]
+     * @var list<Encoding>
      */
     public $encoding = Generator::UNDEFINED;
 

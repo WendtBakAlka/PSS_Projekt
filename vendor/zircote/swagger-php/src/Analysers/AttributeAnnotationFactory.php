@@ -42,7 +42,7 @@ class AttributeAnnotationFactory implements AnnotationFactoryInterface
         // no proper way to inject
         Generator::$context = $context;
 
-        /** @var OA\AbstractAnnotation[] $annotations */
+        /** @var list<OA\AbstractAnnotation> $annotations */
         $annotations = [];
         try {
             $attributeName = $this->ignoreOtherAttributes
@@ -95,7 +95,14 @@ class AttributeAnnotationFactory implements AnnotationFactoryInterface
                                 } else {
                                     $instance->_context->property = $rp->getName();
                                 }
+                            } elseif ($instance instanceof OAT\Parameter) {
+                                if (method_exists($rp, 'getDocComment')) {
+                                    if ($comment = $rp->getDocComment()) {
+                                        $instance->_context->comment = $comment;
+                                    }
+                                }
                             }
+
                             $annotations[] = $instance;
                         }
                     }

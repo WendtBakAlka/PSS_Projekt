@@ -66,17 +66,24 @@ class AugmentParameters implements GeneratorAwareInterface
             }
 
             if ($context->reflector instanceof \ReflectionParameter) {
-                $schema = new OA\Schema([
-                    '_context' => new Context([
-                        'generated' => true,
-                        'reflector' => $context->reflector,
-                    ], $context),
-                ]);
+                $schema = Generator::isDefault($parameter->schema)
+                    ? new OA\Schema([
+                        '_context' => new Context([
+                            'generated' => true,
+                            'reflector' => $context->reflector,
+                        ], $context),
+                    ])
+                    : $parameter->schema;
+
                 $this->generator->getTypeResolver()->augmentSchemaType($analysis, $schema);
 
                 $parameter->merge([new OA\Schema([
                     'type' => $schema->type,
                     'format' => $schema->format,
+                    'items' => $schema->items,
+                    'oneOf' => $schema->oneOf,
+                    'allOf' => $schema->allOf,
+                    'anyOf' => $schema->anyOf,
                     'ref' => $schema->ref,
                     '_context' => new Context([
                         'nested' => $this,
@@ -129,12 +136,19 @@ class AugmentParameters implements GeneratorAwareInterface
             if (!Generator::isDefault($operation->parameters)) {
                 $tags = [];
                 $this->parseDocblock($operation->_context->comment, $tags);
-                $docblockParams = $tags['param'] ?? [];
+                $operationDocblockParams = $tags['param'] ?? [];
 
                 foreach ($operation->parameters as $parameter) {
                     if (Generator::isDefault($parameter->description)) {
-                        if (array_key_exists($parameter->name, $docblockParams)) {
-                            $details = $docblockParams[$parameter->name];
+                        $typeAndDescription = $this->parseVarLine((string) $parameter->_context->comment);
+                        if ($typeAndDescription['description']) {
+                            $parameter->description = trim($typeAndDescription['description']);
+                        }
+                    }
+
+                    if (Generator::isDefault($parameter->description)) {
+                        if (array_key_exists($parameter->name, $operationDocblockParams)) {
+                            $details = $operationDocblockParams[$parameter->name];
                             if ($details['description']) {
                                 $parameter->description = $details['description'];
                             }
