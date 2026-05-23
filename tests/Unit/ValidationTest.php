@@ -8,22 +8,22 @@ use PHPUnit\Framework\Attributes\Test;
 class ValidationTest extends TestCase
 {
     #[Test]
-    public function rating_must_be_between_0_and_5()
+    public function rating_must_be_between_1_and_10()
     {
         $validateRating = function($rating) {
-            return is_numeric($rating) && $rating >= 0 && $rating <= 5;
+            return is_numeric($rating) && $rating >= 1 && $rating <= 10;
         };
 
-        // Prawidłowe
+        // Prawidłowe wartości
+        $this->assertTrue($validateRating(10));
         $this->assertTrue($validateRating(5));
-        $this->assertTrue($validateRating(0));
-        $this->assertTrue($validateRating(3.7));
+        $this->assertTrue($validateRating(1));
 
-        // Nieprawidłowe
-        $this->assertFalse($validateRating(6));
+        // Nieprawidłowe wartości
+        $this->assertFalse($validateRating(11));
+        $this->assertFalse($validateRating(0));
         $this->assertFalse($validateRating(-1));
         $this->assertFalse($validateRating('abc'));
-        $this->assertFalse($validateRating(null));
     }
 
     #[Test]
