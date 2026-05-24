@@ -17,7 +17,7 @@ class UpdateGameStatistics implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected $gameId; // zmieniamy nazwę i typ
+    protected $gameId;
 
     public function __construct($gameId)
     {
@@ -28,37 +28,29 @@ class UpdateGameStatistics implements ShouldQueue
     {
         Log::info("=== UpdateGameStatistics START dla game_id: {$this->gameId} ===");
 
-        // Pobierz wszystkie oceny dla tej gry przez game_id
+        // Pobierz wszystkie wpisy dla tej gry (nie tylko z ocenami)
+        $totalCount = UserGame::where('game_id', $this->gameId)->count();
+        // Pobierz tylko oceny (nie null)
         $ratings = UserGame::where('game_id', $this->gameId)
             ->whereNotNull('rating')
             ->pluck('rating');
+        $ratingsCount = $ratings->count();
+        $avg = $ratingsCount > 0 ? round($ratings->avg(), 2) : null;
 
-        $count = $ratings->count();
-        Log::info("Liczba ocen w user_games: " . $count);
+        Log::info("Liczba wszystkich wpisów w user_games: {$totalCount}, w tym z ocenami: {$ratingsCount}, średnia: {$avg}");
 
-        // Pobierz grę z tabeli games
         $game = Game::find($this->gameId);
         if (!$game) {
             Log::error("Gra o ID {$this->gameId} nie istnieje w tabeli games");
             return;
         }
 
-        // Sprawdź, czy istnieje już rekord w game_stats
-        $stat = GameStat::where('game_id', $this->gameId)->first();
-
-        if ($count === 0) {
-            // Brak ocen – usuń rekord statystyk (jeśli istnieje)
-            if ($stat) {
-                $stat->delete();
-                Log::info("Usunięto statystyki (brak ocen) dla game_id: {$this->gameId}");
-            } else {
-                Log::info("Brak ocen i brak rekordu w game_stats dla game_id: {$this->gameId}");
-            }
+        if ($totalCount === 0) {
+            // Brak jakichkolwiek wpisów dla tej gry – usuń rekord z game_stats
+            GameStat::where('game_id', $this->gameId)->delete();
+            Log::info("Usunięto statystyki (brak wpisów w user_games) dla game_id: {$this->gameId}");
             return;
         }
-
-        // Są oceny – oblicz średnią
-        $avg = round($ratings->avg(), 2);
 
         // Pobierz ocenę z RAWG przez rawg_game_id (z modelu Game)
         $rawgRating = $this->fetchRawgRating($game->rawg_game_id);
@@ -73,11 +65,11 @@ class UpdateGameStatistics implements ShouldQueue
             ['game_id' => $this->gameId],
             [
                 'average_rating' => $avg,
-                'ratings_count'  => $count,
+                'ratings_count'  => $totalCount,  // liczba wszystkich wpisów, nie tylko z oceną
             ]
         );
 
-        Log::info("Zaktualizowano statystyki dla game_id: {$this->gameId}");
+        Log::info("Zaktualizowano statystyki dla game_id: {$this->gameId} (ratings_count = {$totalCount}, average_rating = {$avg})");
     }
 
     private function fetchRawgRating($rawgGameId)

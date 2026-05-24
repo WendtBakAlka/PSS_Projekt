@@ -6,6 +6,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
+        /* Twoje style (bez zmian) */
         body { background-color: #0b0b0b; color: #f5f5f5; }
         .navbar-custom { background-color: #111; border-bottom: 1px solid #1f1f1f; padding: 0.75rem 1rem; }
         .logo { font-size: 1.5rem; font-weight: bold; color: #dc3545; text-decoration: none; }
@@ -73,20 +74,10 @@
                     {{ auth()->user()->name ?? auth()->user()->email }}
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark">
-                    <li>
-                        <a class="dropdown-item" href="{{ route('profile.edit') }}">
-                            <i class="bi bi-person"></i> Twój Profil
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="dropdown-item" href="{{ route('library.index') }}">
-                            <i class="bi bi-collection me-2"></i> Biblioteka
-                        </a>
-                    </li>
+                    <li><a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="bi bi-person"></i> Twój Profil</a></li>
+                    <li><a class="dropdown-item" href="{{ route('library.index') }}"><i class="bi bi-collection me-2"></i> Biblioteka</a></li>
                     @if(auth()->user()->is_admin)
-                        <a class="dropdown-item" href="{{ route('admin.index') }}">
-                            <i class="bi bi-person"></i> Panel admina
-                        </a>
+                        <li><a class="dropdown-item" href="{{ route('admin.index') }}"><i class="bi bi-person"></i> Panel admina</a></li>
                     @endif
                     <li><hr class="dropdown-divider border-secondary"></li>
                     <li>
@@ -109,13 +100,21 @@
             <table class="table-gamelist">
                 <thead>
                 <tr><th>#</th><th>Tytuł</th><th>Okładka</th>
-                    @if($activeTab == 'rated')<th>Średnia ocen</th><th>Liczba ocen</th>@else<th>Liczba ocen</th><th>Średnia ocen</th>@endif
-                    <th>Ocena RAWG</th><th>Akcje</th></tr>
+                    @if($activeTab == 'rated')
+                        <th>Średnia ocen</th>
+                        <th>Liczba ocen</th>
+                    @else
+                        <th>Liczba dodań</th>
+                        <th>Średnia ocen</th>
+                    @endif
+                    <th>Ocena RAWG</th>
+                    <th>Akcje</th>
+                </tr>
                 </thead>
                 <tbody>
                 @forelse($games as $index => $stat)
                     @php
-                        $game = $stat->game; // relacja Game
+                        $game = $stat->game;
                         $title = $game->title ?? 'Brak tytułu';
                         $cover = $game->cover_url ?? 'https://via.placeholder.com/50x50?text=No+Img';
                         $rawgRating = $game->rawg_rating ?? null;
@@ -127,13 +126,31 @@
                             <img src="{{ $cover }}" width="50" height="50" style="object-fit: cover; border-radius: 8px;">
                         </td>
                         @if($activeTab == 'rated')
-                            <td>{{ number_format($stat->average_rating, 1) }}/10</td>
+                            <td>
+                                @if($stat->average_rating !== null)
+                                    {{ number_format($stat->average_rating, 1) }}/10
+                                @else
+                                    --/10
+                                @endif
+                            </td>
                             <td>{{ $stat->ratings_count }}</td>
                         @else
                             <td>{{ $stat->ratings_count }}</td>
-                            <td>{{ number_format($stat->average_rating, 1) }}/10</td>
+                            <td>
+                                @if($stat->average_rating !== null)
+                                    {{ number_format($stat->average_rating, 1) }}/10
+                                @else
+                                    --/10
+                                @endif
+                            </td>
                         @endif
-                        <td>{{ $rawgRating ? $rawgRating.'/10' : 'brak' }}</td>
+                        <td>
+                            @if($rawgRating)
+                                {{ $rawgRating }}/10
+                            @else
+                                --
+                            @endif
+                        </td>
                         <td>
                             <a href="{{ route('games.show', $game->rawg_game_id) }}" class="btn btn-sm btn-outline-light">
                                 <i class="bi bi-info-circle"></i> Szczegóły

@@ -117,7 +117,6 @@ class LibraryController extends Controller
             'rating' => ['nullable', 'integer', 'min:1', 'max:10'],
         ]);
 
-        // Znajdź lub utwórz grę w tabeli games
         $game = Game::firstOrCreate(
             ['rawg_game_id' => $data['rawg_game_id']],
             [
@@ -129,7 +128,6 @@ class LibraryController extends Controller
 
         dispatch(new \App\Jobs\EnrichGameMetadataJob($game->id))->onQueue('metadata');
 
-        // Dodaj grę do biblioteki użytkownika
         $userGame = UserGame::create([
             'user_id' => Auth::id(),
             'game_id' => $game->id,
@@ -137,10 +135,7 @@ class LibraryController extends Controller
             'rating' => $data['rating'] ?? null,
         ]);
 
-        // Jeśli dodano z oceną, wysyłamy job
-        if (!is_null($data['rating'])) {
-            dispatch(new UpdateGameStatistics($game->id))->onQueue('statistics');
-        }
+        dispatch(new UpdateGameStatistics($game->id))->onQueue('statistics');
 
         return response()->json([
             'game' => [
@@ -293,7 +288,6 @@ class LibraryController extends Controller
             'rating' => ['nullable', 'integer', 'min:1', 'max:10'],
         ]);
 
-        // Znajdź lub utwórz grę w tabeli games
         $game = Game::firstOrCreate(
             ['rawg_game_id' => $data['rawg_game_id']],
             [
@@ -303,14 +297,12 @@ class LibraryController extends Controller
             ]
         );
 
-        // Sprawdź, czy użytkownik już ma tę grę w bibliotece
         $existing = UserGame::where('user_id', Auth::id())
             ->where('game_id', $game->id)
             ->first();
 
         $oldRating = $existing ? $existing->rating : null;
 
-        // Aktualizacja lub utworzenie wpisu w user_games
         $userGame = UserGame::updateOrCreate(
             [
                 'user_id' => Auth::id(),
@@ -322,10 +314,7 @@ class LibraryController extends Controller
             ]
         );
 
-        // Jeśli ocena się zmieniła, wysyłamy job
-        if ($oldRating != $userGame->rating) {
-            dispatch(new UpdateGameStatistics($game->id))->onQueue('statistics');
-        }
+        dispatch(new UpdateGameStatistics($game->id))->onQueue('statistics');
 
         return redirect()->route('library.index')->with('success', 'Dodano / zaktualizowano w bibliotece.');
     }
