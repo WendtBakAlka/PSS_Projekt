@@ -10,7 +10,6 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class UpdateGameStatistics implements ShouldQueue
@@ -52,13 +51,6 @@ class UpdateGameStatistics implements ShouldQueue
             return;
         }
 
-        // Pobierz ocenę z RAWG przez rawg_game_id (z modelu Game)
-        $rawgRating = $this->fetchRawgRating($game->rawg_game_id);
-        if ($rawgRating !== null && $game->rawg_rating != $rawgRating) {
-            $game->rawg_rating = $rawgRating;
-            $game->save();
-            Log::info("Zaktualizowano rawg_rating dla gry {$game->title} na {$rawgRating}");
-        }
 
         // Aktualizuj lub utwórz rekord w game_stats
         GameStat::updateOrCreate(
@@ -72,35 +64,4 @@ class UpdateGameStatistics implements ShouldQueue
         Log::info("Zaktualizowano statystyki dla game_id: {$this->gameId} (ratings_count = {$totalCount}, average_rating = {$avg})");
     }
 
-    private function fetchRawgRating($rawgGameId)
-    {
-        try {
-            $apiKey = env('RAWG_API_KEY');
-            $baseUrl = env('RAWG_BASE_URL', 'https://api.rawg.io/api');
-
-            Log::info("Próba pobrania RAWG dla rawg_game_id: {$rawgGameId}, klucz: " . ($apiKey ? 'ustawiony' : 'BRAK'));
-
-            $response = Http::get("{$baseUrl}/games/{$rawgGameId}", [
-                'key' => $apiKey,
-            ]);
-
-            if ($response->successful()) {
-                $data = $response->json();
-                $rating = $data['rating'] ?? null;
-                if ($rating !== null) {
-                    $converted = round($rating * 2, 1);
-                    Log::info("Pobrano rating RAWG: $rating -> $converted");
-                    return $converted;
-                } else {
-                    Log::warning("Brak pola 'rating' w odpowiedzi RAWG dla gry {$rawgGameId}");
-                }
-            } else {
-                Log::warning("Błąd HTTP przy pobieraniu RAWG: " . $response->status());
-            }
-        } catch (\Exception $e) {
-            Log::error("Wyjątek w fetchRawgRating: " . $e->getMessage());
-        }
-
-        return null;
-    }
 }
