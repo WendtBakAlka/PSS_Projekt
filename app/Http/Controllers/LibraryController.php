@@ -277,7 +277,6 @@ class LibraryController extends Controller
             ],
         ]);
     }
-
     public function store(Request $req)
     {
         $data = $req->validate([

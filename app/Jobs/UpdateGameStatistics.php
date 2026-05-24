@@ -100,6 +100,7 @@ class UpdateGameStatistics implements ShouldQueue
         } catch (\Exception $e) {
             Log::error("Wyjątek w fetchRawgRating: " . $e->getMessage());
         }
+
         return null;
     }
 }
