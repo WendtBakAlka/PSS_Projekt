@@ -27,41 +27,37 @@ class UpdateGameStatistics implements ShouldQueue
     {
         Log::info("=== UpdateGameStatistics START dla game_id: {$this->gameId} ===");
 
-        // Pobierz wszystkie wpisy dla tej gry (nie tylko z ocenami)
-        $totalCount = UserGame::where('game_id', $this->gameId)->count();
-        // Pobierz tylko oceny (nie null)
-        $ratings = UserGame::where('game_id', $this->gameId)
-            ->whereNotNull('rating')
-            ->pluck('rating');
-        $ratingsCount = $ratings->count();
-        $avg = $ratingsCount > 0 ? round($ratings->avg(), 2) : null;
+        // Jedno zapytanie SQL zamiast trzech
+        $stats = UserGame::where('game_id', $this->gameId)
+            ->selectRaw('
+            COUNT(*) as total,
+            COUNT(rating) as ratings_count,
+            AVG(rating) as avg_rating
+        ')
+            ->first();
 
-        Log::info("Liczba wszystkich wpisów w user_games: {$totalCount}, w tym z ocenami: {$ratingsCount}, średnia: {$avg}");
+        $totalCount = $stats->total;
+        $ratingsCount = $stats->ratings_count;
+        $avg = $ratingsCount > 0 ? round($stats->avg_rating, 2) : null;
 
-        $game = Game::find($this->gameId);
-        if (!$game) {
-            Log::error("Gra o ID {$this->gameId} nie istnieje w tabeli games");
-            return;
-        }
+        Log::info("Liczba wpisów: {$totalCount}, ocen: {$ratingsCount}, średnia: {$avg}");
 
         if ($totalCount === 0) {
-            // Brak jakichkolwiek wpisów dla tej gry – usuń rekord z game_stats
             GameStat::where('game_id', $this->gameId)->delete();
-            Log::info("Usunięto statystyki (brak wpisów w user_games) dla game_id: {$this->gameId}");
+            Log::info("Usunięto statystyki (brak wpisów) dla game_id: {$this->gameId}");
             return;
         }
 
-
-        // Aktualizuj lub utwórz rekord w game_stats
         GameStat::updateOrCreate(
             ['game_id' => $this->gameId],
             [
                 'average_rating' => $avg,
-                'ratings_count'  => $totalCount,  // liczba wszystkich wpisów, nie tylko z oceną
+                'ratings_count'  => $totalCount,
             ]
         );
 
-        Log::info("Zaktualizowano statystyki dla game_id: {$this->gameId} (ratings_count = {$totalCount}, average_rating = {$avg})");
+        Log::info("Zaktualizowano statystyki dla game_id: {$this->gameId}");
     }
+
 
 }
