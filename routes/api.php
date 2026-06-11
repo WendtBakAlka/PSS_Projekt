@@ -19,15 +19,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/check-auth', function () {
         return response()->json(['authenticated' => true]);
     });
-    
+
     // PROFIL API
     Route::prefix('profile')->group(function () {
         Route::get('/', [ProfileController::class, 'apiShow']);          // GET /api/profile
         Route::patch('/', [ProfileController::class, 'apiUpdate']);      // PATCH /api/profile
         Route::delete('/', [ProfileController::class, 'apiDestroy']);    // DELETE /api/profile
-        Route::patch('/password', [ProfileController::class, 'updatePassword']); // już masz
+        Route::patch('/password', [ProfileController::class, 'apiupdatePassword']); // już masz
     });
-    
+
     // ADMIN API
     Route::middleware('admin')->prefix('admin')->group(function () {
     	Route::get('/users', [AdminController::class, 'listUsers']);

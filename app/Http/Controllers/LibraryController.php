@@ -33,13 +33,13 @@ class LibraryController extends Controller
                             type: "array",
                             items: new OA\Items(
                                 properties: [
-                                    new OA\Property(property: "id", type: "integer"),
-                                    new OA\Property(property: "game_id", type: "integer"),
-                                    new OA\Property(property: "title", type: "string"),
-                                    new OA\Property(property: "cover_url", type: "string", nullable: true),
-                                    new OA\Property(property: "rawg_rating", type: "number", nullable: true),
-                                    new OA\Property(property: "status", type: "string"),
-                                    new OA\Property(property: "rating", type: "integer", nullable: true),
+                                    new OA\Property(property: "id", type: "integer", description: "ID wpisu w bibliotece"),
+                                    new OA\Property(property: "game_id", type: "integer", description: "ID gry (lokalne, z tabeli games)"),
+                                    new OA\Property(property: "title", type: "string", description: "Tytuł gry (z tabeli games)"),
+                                    new OA\Property(property: "cover_url", type: "string", nullable: true, description: "URL okładki (z tabeli games)"),
+                                    new OA\Property(property: "rawg_rating", type: "number", format: "float", nullable: true, description: "Ocena z RAWG (przeliczona na 0-10)"),
+                                    new OA\Property(property: "status", type: "string", enum: ["to_play", "playing", "finished"], description: "Status gry w bibliotece"),
+                                    new OA\Property(property: "rating", type: "integer", nullable: true, description: "Ocena użytkownika (1-10)"),
                                 ]
                             )
                         )
@@ -68,7 +68,6 @@ class LibraryController extends Controller
 
         $games = $q->get();
 
-        // Transformacja do formatu zawierającego dane gry
         $games = $games->map(function ($userGame) {
             return [
                 'id' => $userGame->id,
@@ -94,16 +93,36 @@ class LibraryController extends Controller
             content: new OA\JsonContent(
                 required: ["rawg_game_id", "title", "status"],
                 properties: [
-                    new OA\Property(property: "rawg_game_id", type: "integer", example: 3498),
-                    new OA\Property(property: "title", type: "string", example: "The Witcher 3: Wild Hunt"),
-                    new OA\Property(property: "cover_url", type: "string", nullable: true, example: "https://image.url"),
-                    new OA\Property(property: "status", type: "string", enum: ["to_play", "playing", "finished"], example: "playing"),
-                    new OA\Property(property: "rating", type: "integer", minimum: 1, maximum: 10, nullable: true, example: 9),
+                    new OA\Property(property: "rawg_game_id", type: "integer", example: 3842, description: "ID gry z RAWG API (Battlefield 4)"),
+                    new OA\Property(property: "title", type: "string", example: "Battlefield 4", description: "Tytuł gry"),
+                    new OA\Property(property: "cover_url", type: "string", nullable: true, example: "https://media.rawg.io/media/games/ac7/ac7b8327343da12c971cfc418f390a11.jpg", description: "URL okładki"),
+                    new OA\Property(property: "status", type: "string", enum: ["to_play", "playing", "finished"], example: "playing", description: "Status gry"),
+                    new OA\Property(property: "rating", type: "integer", nullable: true, example: 8, minimum: 1, maximum: 10, description: "Ocena użytkownika (1-10)"),
                 ]
             )
         ),
         responses: [
-            new OA\Response(response: 201, description: "Gra dodana"),
+            new OA\Response(
+                response: 201,
+                description: "Gra dodana",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: "game",
+                            type: "object",
+                            properties: [
+                                new OA\Property(property: "id", type: "integer", description: "ID wpisu w bibliotece"),
+                                new OA\Property(property: "game_id", type: "integer", description: "ID gry (lokalne)"),
+                                new OA\Property(property: "title", type: "string", description: "Tytuł gry"),
+                                new OA\Property(property: "cover_url", type: "string", nullable: true, description: "URL okładki"),
+                                new OA\Property(property: "rawg_rating", type: "number", nullable: true, description: "Ocena RAWG (przeliczona)"),
+                                new OA\Property(property: "status", type: "string", enum: ["to_play", "playing", "finished"], description: "Status gry"),
+                                new OA\Property(property: "rating", type: "integer", nullable: true, description: "Ocena użytkownika"),
+                            ]
+                        )
+                    ]
+                )
+            ),
             new OA\Response(response: 422, description: "Błąd walidacji"),
         ]
     )]
@@ -159,7 +178,8 @@ class LibraryController extends Controller
                 name: "id",
                 in: "path",
                 required: true,
-                schema: new OA\Schema(type: "integer")
+                schema: new OA\Schema(type: "integer"),
+                description: "ID wpisu w bibliotece (user_games.id)"
             )
         ],
         security: [["bearerAuth" => []]],
@@ -167,13 +187,33 @@ class LibraryController extends Controller
             required: true,
             content: new OA\JsonContent(
                 properties: [
-                    new OA\Property(property: "status", type: "string", enum: ["to_play", "playing", "finished"]),
-                    new OA\Property(property: "rating", type: "integer", minimum: 1, maximum: 10, nullable: true),
+                    new OA\Property(property: "status", type: "string", enum: ["to_play", "playing", "finished"], description: "Nowy status gry"),
+                    new OA\Property(property: "rating", type: "integer", nullable: true, minimum: 1, maximum: 10, description: "Nowa ocena użytkownika (1-10)"),
                 ]
             )
         ),
         responses: [
-            new OA\Response(response: 200, description: "Gra zaktualizowana"),
+            new OA\Response(
+                response: 200,
+                description: "Gra zaktualizowana",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: "game",
+                            type: "object",
+                            properties: [
+                                new OA\Property(property: "id", type: "integer", description: "ID wpisu w bibliotece"),
+                                new OA\Property(property: "user_id", type: "integer", description: "ID użytkownika"),
+                                new OA\Property(property: "game_id", type: "integer", description: "ID gry (lokalne)"),
+                                new OA\Property(property: "status", type: "string", description: "Status gry"),
+                                new OA\Property(property: "rating", type: "integer", nullable: true, description: "Ocena użytkownika"),
+                                new OA\Property(property: "created_at", type: "string", format: "date-time", description: "Data dodania"),
+                                new OA\Property(property: "updated_at", type: "string", format: "date-time", description: "Data ostatniej modyfikacji"),
+                            ]
+                        )
+                    ]
+                )
+            ),
             new OA\Response(response: 403, description: "Nie twoja gra"),
             new OA\Response(response: 404, description: "Gra nie znaleziona"),
         ]
@@ -210,7 +250,8 @@ class LibraryController extends Controller
                 name: "id",
                 in: "path",
                 required: true,
-                schema: new OA\Schema(type: "integer")
+                schema: new OA\Schema(type: "integer"),
+                description: "ID wpisu w bibliotece (user_games.id)"
             )
         ],
         security: [["bearerAuth" => []]],
@@ -232,10 +273,8 @@ class LibraryController extends Controller
 
         $userGame->delete();
 
-        // Sprawdzamy, czy istnieją jeszcze inne wpisy tej gry w bibliotekach innych użytkowników
         $anyLeft = UserGame::where('game_id', $gameId)->exists();
 
-        // Jeśli usunięto ocenę lub nie ma już żadnych wpisów, aktualizujemy statystyki
         if ($hadRating || !$anyLeft) {
             dispatch(new UpdateGameStatistics($gameId))->onQueue('statistics');
         }

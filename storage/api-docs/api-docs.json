@@ -332,12 +332,12 @@
                                     "email": {
                                         "type": "string",
                                         "format": "email",
-                                        "example": "admin@example.com"
+                                        "example": "admin@admin.ad"
                                     },
                                     "password": {
                                         "type": "string",
                                         "format": "password",
-                                        "example": "haslo123"
+                                        "example": "adminadmin"
                                     }
                                 },
                                 "type": "object"
@@ -496,26 +496,39 @@
                                             "items": {
                                                 "properties": {
                                                     "id": {
+                                                        "description": "ID wpisu w bibliotece",
                                                         "type": "integer"
                                                     },
                                                     "game_id": {
+                                                        "description": "ID gry (lokalne, z tabeli games)",
                                                         "type": "integer"
                                                     },
                                                     "title": {
+                                                        "description": "Tytuł gry (z tabeli games)",
                                                         "type": "string"
                                                     },
                                                     "cover_url": {
+                                                        "description": "URL okładki (z tabeli games)",
                                                         "type": "string",
                                                         "nullable": true
                                                     },
                                                     "rawg_rating": {
+                                                        "description": "Ocena z RAWG (przeliczona na 0-10)",
                                                         "type": "number",
+                                                        "format": "float",
                                                         "nullable": true
                                                     },
                                                     "status": {
-                                                        "type": "string"
+                                                        "description": "Status gry w bibliotece",
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "to_play",
+                                                            "playing",
+                                                            "finished"
+                                                        ]
                                                     },
                                                     "rating": {
+                                                        "description": "Ocena użytkownika (1-10)",
                                                         "type": "integer",
                                                         "nullable": true
                                                     }
@@ -554,19 +567,23 @@
                                 ],
                                 "properties": {
                                     "rawg_game_id": {
+                                        "description": "ID gry z RAWG API (Battlefield 4)",
                                         "type": "integer",
-                                        "example": 3498
+                                        "example": 3842
                                     },
                                     "title": {
+                                        "description": "Tytuł gry",
                                         "type": "string",
-                                        "example": "The Witcher 3: Wild Hunt"
+                                        "example": "Battlefield 4"
                                     },
                                     "cover_url": {
+                                        "description": "URL okładki",
                                         "type": "string",
-                                        "example": "https://image.url",
+                                        "example": "https://media.rawg.io/media/games/ac7/ac7b8327343da12c971cfc418f390a11.jpg",
                                         "nullable": true
                                     },
                                     "status": {
+                                        "description": "Status gry",
                                         "type": "string",
                                         "example": "playing",
                                         "enum": [
@@ -576,8 +593,9 @@
                                         ]
                                     },
                                     "rating": {
+                                        "description": "Ocena użytkownika (1-10)",
                                         "type": "integer",
-                                        "example": 9,
+                                        "example": 8,
                                         "nullable": true,
                                         "maximum": 10,
                                         "minimum": 1
@@ -590,7 +608,57 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "Gra dodana"
+                        "description": "Gra dodana",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "game": {
+                                            "properties": {
+                                                "id": {
+                                                    "description": "ID wpisu w bibliotece",
+                                                    "type": "integer"
+                                                },
+                                                "game_id": {
+                                                    "description": "ID gry (lokalne)",
+                                                    "type": "integer"
+                                                },
+                                                "title": {
+                                                    "description": "Tytuł gry",
+                                                    "type": "string"
+                                                },
+                                                "cover_url": {
+                                                    "description": "URL okładki",
+                                                    "type": "string",
+                                                    "nullable": true
+                                                },
+                                                "rawg_rating": {
+                                                    "description": "Ocena RAWG (przeliczona)",
+                                                    "type": "number",
+                                                    "nullable": true
+                                                },
+                                                "status": {
+                                                    "description": "Status gry",
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "to_play",
+                                                        "playing",
+                                                        "finished"
+                                                    ]
+                                                },
+                                                "rating": {
+                                                    "description": "Ocena użytkownika",
+                                                    "type": "integer",
+                                                    "nullable": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "422": {
                         "description": "Błąd walidacji"
@@ -614,6 +682,7 @@
                     {
                         "name": "id",
                         "in": "path",
+                        "description": "ID wpisu w bibliotece (user_games.id)",
                         "required": true,
                         "schema": {
                             "type": "integer"
@@ -627,6 +696,7 @@
                             "schema": {
                                 "properties": {
                                     "status": {
+                                        "description": "Nowy status gry",
                                         "type": "string",
                                         "enum": [
                                             "to_play",
@@ -635,6 +705,7 @@
                                         ]
                                     },
                                     "rating": {
+                                        "description": "Nowa ocena użytkownika (1-10)",
                                         "type": "integer",
                                         "nullable": true,
                                         "maximum": 10,
@@ -648,7 +719,52 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Gra zaktualizowana"
+                        "description": "Gra zaktualizowana",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "game": {
+                                            "properties": {
+                                                "id": {
+                                                    "description": "ID wpisu w bibliotece",
+                                                    "type": "integer"
+                                                },
+                                                "user_id": {
+                                                    "description": "ID użytkownika",
+                                                    "type": "integer"
+                                                },
+                                                "game_id": {
+                                                    "description": "ID gry (lokalne)",
+                                                    "type": "integer"
+                                                },
+                                                "status": {
+                                                    "description": "Status gry",
+                                                    "type": "string"
+                                                },
+                                                "rating": {
+                                                    "description": "Ocena użytkownika",
+                                                    "type": "integer",
+                                                    "nullable": true
+                                                },
+                                                "created_at": {
+                                                    "description": "Data dodania",
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                },
+                                                "updated_at": {
+                                                    "description": "Data ostatniej modyfikacji",
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "403": {
                         "description": "Nie twoja gra"
@@ -673,6 +789,7 @@
                     {
                         "name": "id",
                         "in": "path",
+                        "description": "ID wpisu w bibliotece (user_games.id)",
                         "required": true,
                         "schema": {
                             "type": "integer"
@@ -759,7 +876,7 @@
                                     "password": {
                                         "type": "string",
                                         "format": "password",
-                                        "example": "current_password123"
+                                        "example": "nowehaslo456"
                                     }
                                 },
                                 "type": "object"
@@ -872,12 +989,12 @@
                                     "current_password": {
                                         "type": "string",
                                         "format": "password",
-                                        "example": "old_password123"
+                                        "example": "tajnehaslo123"
                                     },
                                     "new_password": {
                                         "type": "string",
                                         "format": "password",
-                                        "example": "new_password456",
+                                        "example": "nowehaslo456",
                                         "minLength": 8
                                     }
                                 },

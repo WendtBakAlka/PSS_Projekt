@@ -115,7 +115,7 @@ class ProfileController extends Controller
             content: new OA\JsonContent(
                 required: ["password"],
                 properties: [
-                    new OA\Property(property: "password", type: "string", format: "password", example: "current_password123")
+                    new OA\Property(property: "password", type: "string", format: "password", example: "nowehaslo456")
                 ]
             )
         ),
@@ -139,10 +139,10 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
-        
+
         // Usuń wszystkie tokeny użytkownika
         $user->tokens()->delete();
-        
+
         // Usuń konto
         $user->delete();
 
@@ -161,8 +161,8 @@ class ProfileController extends Controller
             content: new OA\JsonContent(
                 required: ["current_password", "new_password"],
                 properties: [
-                    new OA\Property(property: "current_password", type: "string", format: "password", example: "old_password123"),
-                    new OA\Property(property: "new_password", type: "string", format: "password", minLength: 8, example: "new_password456")
+                    new OA\Property(property: "current_password", type: "string", format: "password", example: "tajnehaslo123"),
+                    new OA\Property(property: "new_password", type: "string", format: "password", minLength: 8, example: "nowehaslo456")
                 ]
             )
         ),
