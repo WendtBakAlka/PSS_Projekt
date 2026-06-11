@@ -21,8 +21,8 @@ class AuthController extends Controller
             content: new OA\JsonContent(
                 required: ["email", "password"],
                 properties: [
-                    new OA\Property(property: "email", type: "string", format: "email", example: "admin@example.com"),
-                    new OA\Property(property: "password", type: "string", format: "password", example: "haslo123"),
+                    new OA\Property(property: "email", type: "string", format: "email", example: "admin@admin.ad"),
+                    new OA\Property(property: "password", type: "string", format: "password", example: "adminadmin"),
                 ]
             )
         ),
@@ -183,7 +183,7 @@ class AuthController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        
+
         return redirect('/');
     }
 }
